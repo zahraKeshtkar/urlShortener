@@ -8,14 +8,14 @@ import (
 )
 
 type Link struct {
-	Url  string
-	Hash string
+	Url      string
+	ShortUrl string
 }
 
 func NewLink(url string) *Link {
 	l := new(Link)
 	l.Url = url
-	l.Hash = MakeShortUrl(url)
+	l.ShortUrl = MakeShortUrl(url)
 	return l
 }
 
@@ -31,6 +31,6 @@ func IsLinkExits(longUrl string) bool {
 
 func MakeShortUrl(longUrl string) string {
 	md := md5.Sum([]byte(longUrl))
-	hash := base64.StdEncoding.EncodeToString(md[:])
-	return hash[:6]
+	ShortUrl := base64.StdEncoding.EncodeToString(md[:])
+	return ShortUrl[:6]
 }

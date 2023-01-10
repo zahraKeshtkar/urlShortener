@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
@@ -11,6 +13,10 @@ import (
 func main() {
 	e := echo.New()
 	log := logrus.New()
+
+	f, _ := os.OpenFile("file.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	defer f.Close()
+	log.SetOutput(f)
 
 	e.POST("/new", handler.SaveUrl)
 	e.GET("/:hash", handler.Redirect)

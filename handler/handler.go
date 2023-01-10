@@ -20,27 +20,26 @@ func SaveUrl(c echo.Context) error {
 	if !model.IsLinkExits(url) {
 		return echo.NewHTTPError(http.StatusNotFound, "This link is not found")
 	}
-	hash := model.MakeShortUrl(url)
-	longUrl, ok := db[hash]
+	ShortUrl := model.MakeShortUrl(url)
+	longUrl, ok := db[ShortUrl]
 	if longUrl == url && ok {
-		return c.JSON(http.StatusOK, hash)
+		return c.JSON(http.StatusOK, ShortUrl)
 	}
 
 	url = strings.Replace(url, "www.", "", 1)
 	link := model.NewLink(url)
 
-	db[link.Url] = link.Hash
-	return c.JSON(http.StatusCreated, hash)
+	db[link.ShortUrl] = link.Url
+
+	return c.JSONPretty(http.StatusCreated, link, "	")
 
 }
 
 func Redirect(c echo.Context) error {
-	hash := c.Param("hash")
-
-	if hash != "" {
-		longUrl, ok := db[hash]
-
-		if ok {
+	ShortUrl := c.Param("hash")
+	if ShortUrl != "" {
+		longUrl, ok := db[ShortUrl]
+		if !ok {
 			echo.NewHTTPError(http.StatusBadRequest, "short url is not valid")
 		} else {
 			c.Redirect(http.StatusFound, longUrl)
