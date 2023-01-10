@@ -20,8 +20,10 @@ func SaveUrl(c echo.Context) error {
 	if !model.IsLinkExits(url) {
 		return echo.NewHTTPError(http.StatusNotFound, "This link is not found")
 	}
+
 	ShortUrl := model.MakeShortUrl(url)
 	longUrl, ok := db[ShortUrl]
+
 	if longUrl == url && ok {
 		return c.JSON(http.StatusOK, ShortUrl)
 	}
@@ -40,9 +42,9 @@ func Redirect(c echo.Context) error {
 	if ShortUrl != "" {
 		longUrl, ok := db[ShortUrl]
 		if !ok {
-			echo.NewHTTPError(http.StatusBadRequest, "short url is not valid")
+			return echo.NewHTTPError(http.StatusBadRequest, "short url is not valid")
 		} else {
-			c.Redirect(http.StatusFound, longUrl)
+			return c.Redirect(http.StatusFound, longUrl)
 		}
 	}
 	return echo.NewHTTPError(http.StatusBadRequest, "short url is not valid")
