@@ -8,22 +8,29 @@ import (
 )
 
 type Link struct {
-	url  string
-	hash string
+	Url  string
+	Hash string
 }
 
-func NewLink(url string) {
+func NewLink(url string) *Link {
 	l := new(Link)
-	l.url = url
-	md5 := md5.Sum([]byte(url))
-	hash := base64.StdEncoding.EncodeToString(md5[:])
-	l.hash = hash[:6]
+	l.Url = url
+	l.Hash = MakeShortUrl(url)
+	return l
 }
+
 func IsUrlValid(longUrl string) bool {
 	_, err := url.ParseRequestURI(longUrl)
 	return err == nil
 }
+
 func IsLinkExits(longUrl string) bool {
 	_, err := http.Head(longUrl)
 	return err == nil
+}
+
+func MakeShortUrl(longUrl string) string {
+	md := md5.Sum([]byte(longUrl))
+	hash := base64.StdEncoding.EncodeToString(md[:])
+	return hash[:6]
 }
