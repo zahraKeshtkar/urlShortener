@@ -1,36 +1,67 @@
 package model
 
 import (
-	"crypto/md5"
-	"encoding/base64"
-	"net/http"
-	"net/url"
+	"regexp"
+	"unicode/utf8"
+
+	"url-shortner/log"
 )
 
 type Link struct {
-	Url      string
-	ShortUrl string
+	URL      string
+	ShortURL string
 }
 
-func NewLink(url string) *Link {
+const ShortURLLength = 8
+
+func NewLink(id int, URL string) *Link {
 	l := new(Link)
-	l.Url = url
-	l.ShortUrl = MakeShortUrl(url)
+	l.URL = URL
+	l.ShortURL = MakeShortURL(id)
+
 	return l
 }
 
-func IsUrlValid(longUrl string) bool {
-	_, err := url.ParseRequestURI(longUrl)
-	return err == nil
+func IsURLValid(longURL string) bool {
+	r, _ := regexp.Compile(`[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
+
+	return r.MatchString(longURL)
 }
 
-func IsLinkExits(longUrl string) bool {
-	_, err := http.Head(longUrl)
-	return err == nil
+func MakeShortURL(id int) string {
+	log.Trace("start to make shortURL")
+	var str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXY"
+	chars := []rune(str)
+	var shortURL string
+	for id > 0 {
+		shortURL += string(chars[id%51])
+		log.Trace(chars[id%51], "append to the short url")
+		id = id / 51
+	}
+
+	shortURL = ExpandURLLength(shortURL)
+
+	return shortURL
 }
 
-func MakeShortUrl(longUrl string) string {
-	md := md5.Sum([]byte(longUrl))
-	ShortUrl := base64.StdEncoding.EncodeToString(md[:])
-	return ShortUrl[:6]
+func ExpandURLLength(url string) string {
+	var shortURL = ""
+	var diff = ShortURLLength - utf8.RuneCountInString(url)
+	for i := 0; i < diff; i++ {
+		shortURL += "Z"
+	}
+
+	shortURL += url
+	log.Trace("append ", shortURL, "to the url", url)
+
+	return shortURL
+}
+
+func FindShortURL(shortURL string, db map[string]string) (string, bool) {
+	if utf8.RuneCountInString(shortURL) == ShortURLLength {
+		longURL, ok := db[shortURL]
+
+		return longURL, ok
+	}
+	return "", false
 }

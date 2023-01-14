@@ -1,52 +1,51 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/labstack/echo/v4"
 
+	"url-shortner/log"
 	"url-shortner/model"
 )
 
 var db = make(map[string]string)
 
-func SaveUrl(c echo.Context) error {
-	url := c.FormValue("url")
+func SaveURL(c echo.Context) error {
+	body := make(map[string]string)
+	err := json.NewDecoder(c.Request().Body).Decode(&body)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "can not decode the body as json")
+	}
 
-	if !model.IsUrlValid(url) {
+	URL := body["url"]
+	log.Debug("Get long url with this value ", URL)
+	if !model.IsURLValid(URL) {
+		log.Debug("The long url is not valid ")
+
 		return echo.NewHTTPError(http.StatusBadRequest, "This is not a url at all")
 	}
-	if !model.IsLinkExits(url) {
-		return echo.NewHTTPError(http.StatusNotFound, "This link is not found")
-	}
 
-	ShortUrl := model.MakeShortUrl(url)
-	longUrl, ok := db[ShortUrl]
+	link := model.NewLink(len(db)+1, URL)
+	log.Debug("The short url will be ", link.ShortURL)
+	db[link.ShortURL] = link.URL
+	log.Debug("Saved in the database with success status")
 
-	if longUrl == url && ok {
-		return c.JSON(http.StatusOK, ShortUrl)
-	}
-
-	url = strings.Replace(url, "www.", "", 1)
-	link := model.NewLink(url)
-
-	db[link.ShortUrl] = link.Url
-
-	return c.JSONPretty(http.StatusCreated, link, "	")
-
+	return c.JSONPretty(http.StatusOK, link, "	")
 }
 
 func Redirect(c echo.Context) error {
-	ShortUrl := c.Param("hash")
-	if ShortUrl != "" {
-		longUrl, ok := db[ShortUrl]
-		if !ok {
-			return echo.NewHTTPError(http.StatusBadRequest, "short url is not valid")
-		} else {
-			return c.Redirect(http.StatusFound, longUrl)
-		}
-	}
-	return echo.NewHTTPError(http.StatusBadRequest, "short url is not valid")
+	shortURL := c.Param("shortURL")
+	log.Debug("Get short url with this value ", shortURL)
+	longURL, ok := model.FindShortURL(shortURL, db)
+	if !ok {
+		log.Debug("the short url is not found ", shortURL)
 
+		return echo.NewHTTPError(http.StatusNotFound, "the short url is not found")
+	} else {
+		log.Debug("find the long url and redirect ", longURL)
+
+		return c.Redirect(http.StatusFound, longURL)
+	}
 }
