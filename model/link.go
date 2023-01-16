@@ -1,60 +1,53 @@
 package model
 
 import (
+	"math/rand"
 	"regexp"
+	"time"
 	"unicode/utf8"
 
 	"url-shortner/log"
 )
 
 type Link struct {
-	URL      string
+	URL      string `json:"url"`
 	ShortURL string
 }
 
 const ShortURLLength = 8
+const Retry = 3
 
-func NewLink(id int, URL string) *Link {
-	l := new(Link)
-	l.URL = URL
-	l.ShortURL = MakeShortURL(id)
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+var re *regexp.Regexp
 
-	return l
+func init() {
+	re, _ = regexp.Compile(`[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
 }
 
-func IsURLValid(longURL string) bool {
-	r, _ := regexp.Compile(`[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
-
-	return r.MatchString(longURL)
+func (link *Link) IsURLValid() bool {
+	return re.MatchString(link.URL)
 }
 
-func MakeShortURL(id int) string {
+func (link *Link) MakeShortURL(db map[string]string) bool {
 	log.Trace("start to make shortURL")
-	var str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXY"
-	chars := []rune(str)
-	var shortURL string
-	for id > 0 {
-		shortURL += string(chars[id%51])
-		log.Trace(chars[id%51], "append to the short url")
-		id = id / 51
+	shortURL := make([]rune, ShortURLLength)
+	rand.Seed(time.Now().UnixNano())
+	var counter = 0
+	for counter < Retry {
+		for i := range shortURL {
+			shortURL[i] = letters[rand.Intn(len(letters))]
+		}
+		_, ok := db[string(shortURL)]
+		if !ok {
+			link.ShortURL = string(shortURL)
+			return true
+
+		}
+
+		counter += 1
 	}
 
-	shortURL = ExpandURLLength(shortURL)
-
-	return shortURL
-}
-
-func ExpandURLLength(url string) string {
-	var shortURL = ""
-	var diff = ShortURLLength - utf8.RuneCountInString(url)
-	for i := 0; i < diff; i++ {
-		shortURL += "Z"
-	}
-
-	shortURL += url
-	log.Trace("append ", shortURL, "to the url", url)
-
-	return shortURL
+	return false
 }
 
 func FindShortURL(shortURL string, db map[string]string) (string, bool) {

@@ -20,8 +20,8 @@ func Trace(args ...interface{}) {
 	defaultLogger.Trace(args...)
 }
 
-func Fatal(args ...interface{}) {
-	defaultLogger.Fatal(args...)
+func Fatalf(format string, args ...interface{}) {
+	defaultLogger.Fatalf(format, args)
 }
 
 func SetLevel(level logrus.Level) {
