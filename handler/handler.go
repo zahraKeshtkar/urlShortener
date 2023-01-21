@@ -89,7 +89,7 @@ func (api *API) Redirect(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "the short url is not found")
 	}
 
-	id := link.ShortUrlToId()
+	id := link.ShortURLToID()
 	link = api.DB.GetLink(id)
 	log.Debug("find the long url and redirect ", link.URL)
 

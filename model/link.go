@@ -49,7 +49,6 @@ func (link *Link) MakeShortURL() {
 
 	shortURL = link.ExpandURLLength(shortURL)
 	link.ShortURL = shortURL
-
 }
 
 func (link *Link) ExpandURLLength(url string) string {
@@ -65,7 +64,7 @@ func (link *Link) ExpandURLLength(url string) string {
 	return shortURL
 }
 
-func (link *Link) ShortUrlToId() int {
+func (link *Link) ShortURLToID() int {
 	shortURL := strings.ReplaceAll(link.ShortURL, "Z", "")
 	var id = 0
 	for _, r := range shortURL {
