@@ -24,6 +24,14 @@ func Fatalf(format string, args ...interface{}) {
 	defaultLogger.Fatalf(format, args)
 }
 
+func Errorf(format string, args ...interface{}) {
+	defaultLogger.Errorf(format, args)
+}
+
+func Debugf(format string, args ...interface{}) {
+	defaultLogger.Debugf(format, args)
+}
+
 func SetLevel(level logrus.Level) {
 	defaultLogger.SetLevel(level)
 }
