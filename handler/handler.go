@@ -72,6 +72,7 @@ func (api *API) SaveURL(c echo.Context) error {
 
 		return echo.NewHTTPError(http.StatusBadRequest, "This is not a url at all")
 	}
+
 	api.DB.InsertLink(link)
 	link.MakeShortURL()
 
@@ -82,7 +83,6 @@ func (api *API) Redirect(c echo.Context) error {
 	shortURL := c.Param("shortURL")
 	link := model.Link{ShortURL: shortURL}
 	log.Debug("Get short url with this value ", shortURL)
-
 	if !link.Validate() {
 		log.Debug("the short url is not found ", shortURL)
 

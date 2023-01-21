@@ -24,6 +24,7 @@ func Register(root *cobra.Command, cfg config.Config) {
 					cfg.Database.Password,
 					cfg.Database.DB,
 					cfg.Database.Port)
+				defer db.CloseDataBase()
 				api := handler.API{
 					DB: db,
 				}

@@ -60,7 +60,7 @@ func (db *DataBase) CreateTable() {
 	if !db.gormDB.Migrator().HasTable(model.Link{}) {
 		err := db.gormDB.Migrator().CreateTable(&model.Link{})
 		if err != nil {
-			fmt.Println(err)
+			log.Fatalf("creating database fail %s", err)
 		}
 
 	}
@@ -70,6 +70,7 @@ func (db *DataBase) CreateTable() {
 func (db *DataBase) GetLink(id int) model.Link {
 	var link model.Link
 	db.gormDB.Model(&link).First(&link, id)
+
 	return link
 
 }

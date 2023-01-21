@@ -19,9 +19,9 @@ type Link struct {
 const shortURLLength = 8
 
 var (
-	alphabets = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXY"
-	strLength = 51
-	urlRegex  *regexp.Regexp
+	alphabets       = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXY"
+	alphabetsLength = 51
+	urlRegex        *regexp.Regexp
 )
 
 func init() {
@@ -42,9 +42,9 @@ func (link *Link) MakeShortURL() {
 	chars := []rune(alphabets)
 	var shortURL string
 	for id > 0 {
-		shortURL += string(chars[id%strLength])
-		log.Debug(chars[id%strLength], "append to the short url")
-		id = id / strLength
+		shortURL += string(chars[id%alphabetsLength])
+		log.Debug(chars[id%alphabetsLength], "append to the short url")
+		id = id / alphabetsLength
 	}
 
 	shortURL = link.ExpandURLLength(shortURL)
@@ -70,11 +70,11 @@ func (link *Link) ShortUrlToId() int {
 	var id = 0
 	for _, r := range shortURL {
 		if int('a') <= int(r) && int(r) <= int('z') {
-			id = id*51 + int(r) - int('a')
+			id = id*alphabetsLength + int(r) - int('a')
 		}
 
 		if int('A') <= int(r) && int(r) <= int('Z') {
-			id = id*51 + int(r) - int('A') + 26
+			id = id*alphabetsLength + int(r) - int('A') + 26
 		}
 
 	}
