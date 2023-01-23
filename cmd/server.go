@@ -75,20 +75,29 @@ func runServer(cmd *cobra.Command, args []string) error {
 	}))
 	shutdownCtx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
+	serverChannel := make(chan error)
 	go func() {
 		if err = serverRouter.Start(":" + strconv.Itoa(port)); err != nil {
 			log.Errorf("Starting server failed: %s", err)
+			serverChannel <- err
 		}
 	}()
 	if err != nil {
 		return err
 	}
 
-	<-shutdownCtx.Done()
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err = serverRouter.Shutdown(ctx); err != nil {
-		log.Errorf("Shutting down has error: %s", err)
+	select {
+	case <-shutdownCtx.Done():
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err = serverRouter.Shutdown(ctx); err != nil {
+			log.Errorf("Shutting down has error: %s", err)
+
+			return err
+		}
+
+	case err = <-serverChannel:
+		close(serverChannel)
 
 		return err
 	}
