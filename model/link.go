@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -11,18 +12,18 @@ import (
 )
 
 type Link struct {
-	URL      string `json:"url"`
-	ShortURL string `gorm:"-"`
-	ID       uint64 `json:"-"`
+	ID       uint64 `json:"-" gorm:"primaryKey"`
+	URL      string `json:"url" gorm:"not null"`
+	ShortURL string `gorm:"-:all"`
 }
 
-const shortURLLength = 8
-
-var (
+const (
 	alphabets       = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXY"
 	alphabetsLength = 51
-	urlRegex        *regexp.Regexp
+	shortURLLength  = 8
 )
+
+var urlRegex *regexp.Regexp
 
 func init() {
 	urlRegex = regexp.MustCompile(`[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
@@ -36,9 +37,13 @@ func (link *Link) Validate() bool {
 	return err == nil
 }
 
-func (link *Link) MakeShortURL() {
-	log.Debug("start to make shortURL")
+func (link *Link) MakeShortURL() error {
+	log.Debugf("start to make shortURL for long url %s", link.URL)
 	id := int(link.ID)
+	if id <= 0 {
+		return errors.New("id is not valid")
+	}
+
 	chars := []rune(alphabets)
 	var shortURL string
 	for id > 0 {
@@ -47,11 +52,13 @@ func (link *Link) MakeShortURL() {
 		id = id / alphabetsLength
 	}
 
-	shortURL = link.ExpandURLLength(shortURL)
+	shortURL = link.expandURLLength(shortURL)
 	link.ShortURL = shortURL
+
+	return nil
 }
 
-func (link *Link) ExpandURLLength(url string) string {
+func (link *Link) expandURLLength(url string) string {
 	var shortURL = ""
 	var diff = shortURLLength - utf8.RuneCountInString(url)
 	for i := 0; i < diff; i++ {
@@ -64,7 +71,7 @@ func (link *Link) ExpandURLLength(url string) string {
 	return shortURL
 }
 
-func (link *Link) ShortURLToID() int {
+func (link *Link) ShortURLToID() (int, error) {
 	shortURL := strings.ReplaceAll(link.ShortURL, "Z", "")
 	var id = 0
 	for _, r := range shortURL {
@@ -72,11 +79,15 @@ func (link *Link) ShortURLToID() int {
 			id = id*alphabetsLength + int(r) - int('a')
 		}
 
-		if int('A') <= int(r) && int(r) <= int('Z') {
+		if int('A') <= int(r) && int(r) < int('Z') {
 			id = id*alphabetsLength + int(r) - int('A') + 26
 		}
 
 	}
 
-	return id
+	if id > 0 {
+		return id, nil
+	}
+
+	return id, errors.New("id is not valid")
 }

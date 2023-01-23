@@ -3,21 +3,31 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"url-shortner/cmd/server"
-	setupdb "url-shortner/cmd/setup"
 	"url-shortner/config"
 	"url-shortner/log"
 )
 
-func Execute() {
-	cfg := config.Init()
+var cfg config.Config
+
+func Execute() error {
+	conf, err := config.Init()
+	cfg = conf
+	if err != nil {
+		log.Errorf("can not run the command err is  %s", err)
+
+		return err
+	}
+
 	var rootCmd = &cobra.Command{
 		Run: func(cmd *cobra.Command, args []string) {},
 	}
-	server.Register(rootCmd, cfg)
-	setupdb.Register(rootCmd, cfg)
-	if err := rootCmd.Execute(); err != nil {
-		log.Fatalf(" %s", err)
+	RegisterServer(rootCmd, cfg)
+	RegisterDatabase(rootCmd, cfg)
+	if err = rootCmd.Execute(); err != nil {
+		log.Errorf("can not run the command err is  %s", err)
+
+		return err
 	}
 
+	return nil
 }

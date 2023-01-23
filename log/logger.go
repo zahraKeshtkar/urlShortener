@@ -3,6 +3,7 @@ package log
 import (
 	"io"
 
+	"github.com/labstack/gommon/log"
 	"github.com/sirupsen/logrus"
 )
 
@@ -32,8 +33,26 @@ func Debugf(format string, args ...interface{}) {
 	defaultLogger.Debugf(format, args)
 }
 
-func SetLevel(level logrus.Level) {
-	defaultLogger.SetLevel(level)
+func Infof(format string, args ...interface{}) {
+	defaultLogger.Infof(format, args)
+}
+
+func SetLevel(level string) {
+	switch level {
+	case "debug":
+		logrus.SetLevel(logrus.DebugLevel)
+	case "info":
+		logrus.SetLevel(logrus.InfoLevel)
+	case "warn":
+		logrus.SetLevel(logrus.WarnLevel)
+	case "error":
+		logrus.SetLevel(logrus.ErrorLevel)
+	case "trace":
+		logrus.SetLevel(logrus.TraceLevel)
+	default:
+		logrus.SetLevel(logrus.InfoLevel)
+		log.Warnf("invalid log level supplied: '%s'", level)
+	}
 }
 
 func WithFields(keysAndValues logrus.Fields) *logrus.Entry {

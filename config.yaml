@@ -1,0 +1,11 @@
+database:
+  host: "localhost"
+  port: 5432
+  user: "url"
+  password: "97243057"
+  db : "gorm"
+  retry : 4
+httpHandler:
+  port: 8080
+log:
+  level: "debug"
