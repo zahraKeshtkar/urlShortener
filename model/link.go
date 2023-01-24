@@ -11,12 +11,6 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
-type Link struct {
-	ID       uint64 `json:"-" gorm:"primaryKey"`
-	URL      string `json:"url" gorm:"not null"`
-	ShortURL string `gorm:"-:all"`
-}
-
 const (
 	alphabets       = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXY"
 	alphabetsLength = 51
@@ -27,6 +21,12 @@ var urlRegex *regexp.Regexp
 
 func init() {
 	urlRegex = regexp.MustCompile(`[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
+}
+
+type Link struct {
+	ID       uint64 `json:"-" gorm:"primaryKey"`
+	URL      string `json:"url" gorm:"not null"`
+	ShortURL string `gorm:"-:all"`
 }
 
 func (link *Link) Validate() bool {
