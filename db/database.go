@@ -17,10 +17,8 @@ func NewConnection(host string,
 	password string,
 	database string,
 	port int) (*gorm.DB, error) {
-	var err error
-	var db *gorm.DB
 	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=disable database=%s", host, port, user, password, database)
-	db, err = gorm.Open(postgres.Open(dsn))
+	db, err := gorm.Open(postgres.Open(dsn))
 	if err != nil {
 		log.Errorf("Cannot open database %s: %s", host, err)
 
@@ -51,7 +49,6 @@ func NewConnection(host string,
 
 			return db, err
 		}
-
 	}
 
 	log.Infof("Connected to postgres database: %s", host)
@@ -61,17 +58,17 @@ func NewConnection(host string,
 
 func Close(db *gorm.DB) error {
 	dbInstance, err := db.DB()
-	closeError := dbInstance.Close()
 	if err != nil {
 		log.Errorf("Cannot close database : %s", err)
 
 		return err
 	}
 
-	if closeError != nil {
-		log.Errorf("Cannot close database : %s", closeError)
+	err = dbInstance.Close()
+	if err != nil {
+		log.Errorf("Cannot close database : %s", err)
 
-		return closeError
+		return err
 	}
 
 	return nil

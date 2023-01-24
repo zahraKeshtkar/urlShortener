@@ -13,12 +13,13 @@ type Config struct {
 }
 
 type SQLDatabase struct {
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	DB       string `yaml:"db"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	Retry    int    `yaml:"retry"`
+	Host         string `yaml:"host"`
+	Port         int    `yaml:"port"`
+	Name         string `yaml:"name"`
+	User         string `yaml:"user"`
+	Password     string `yaml:"password"`
+	Retry        int    `yaml:"retry"`
+	RetryTimeout int    `yaml:"retryTimeout"`
 }
 
 type HttpHandler struct {

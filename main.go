@@ -8,6 +8,6 @@ import (
 func main() {
 	err := cmd.Execute()
 	if err != nil {
-		log.Fatalf("can not use app %s", err)
+		log.Fatalf("can not use app: %s", err)
 	}
 }

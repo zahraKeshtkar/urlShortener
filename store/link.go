@@ -1,4 +1,4 @@
-package store
+package repository
 
 import (
 	"gorm.io/gorm"
@@ -8,18 +8,12 @@ import (
 )
 
 type LinkStore struct {
-	db *gorm.DB
+	DB *gorm.DB
 }
 
-func NewLinkStore(db *gorm.DB) *LinkStore {
-	return &LinkStore{
-		db: db,
-	}
-}
-
-func (linkStore *LinkStore) CreateLinkTable() error {
-	if !linkStore.db.Migrator().HasTable(model.Link{}) {
-		err := linkStore.db.Migrator().CreateTable(&model.Link{})
+func (linkStore *LinkStore) CreateTable() error {
+	if !linkStore.DB.Migrator().HasTable(model.Link{}) {
+		err := linkStore.DB.Migrator().CreateTable(&model.Link{})
 		if err != nil {
 			log.Errorf("creating LinkStore fail %s", err)
 
@@ -30,13 +24,14 @@ func (linkStore *LinkStore) CreateLinkTable() error {
 	return nil
 }
 
-func (linkStore *LinkStore) GetLink(id int) model.Link {
+func (linkStore *LinkStore) Get(id int) model.Link {
 	var link model.Link
-	linkStore.db.Model(&link).First(&link, id)
+	linkStore.DB.Model(&link).First(&link, id)
 
 	return link
 }
 
-func (linkStore *LinkStore) InsertLink(link *model.Link) {
-	linkStore.db.Table("links").Create(&link)
+func (linkStore *LinkStore) Insert(link *model.Link) error {
+	r := linkStore.DB.Table("links").Create(&link)
+	return r.Error
 }

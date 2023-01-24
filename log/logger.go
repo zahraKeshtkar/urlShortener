@@ -51,7 +51,7 @@ func SetLevel(level string) {
 		logrus.SetLevel(logrus.TraceLevel)
 	default:
 		logrus.SetLevel(logrus.InfoLevel)
-		log.Warnf("invalid log level supplied: '%s'", level)
+		log.Warnf("because the provided log level (%s) was invalid, log level was set to info", level)
 	}
 }
 

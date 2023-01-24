@@ -16,8 +16,7 @@ import (
 	database "url-shortner/db"
 	"url-shortner/handler"
 	"url-shortner/log"
-	"url-shortner/router"
-	"url-shortner/store"
+	repository "url-shortner/store"
 )
 
 func RegisterServer(root *cobra.Command, cfg config.Config) {
@@ -47,21 +46,30 @@ func runServer(cmd *cobra.Command, args []string) error {
 	log.SetLevel(cfg.Log.Level)
 	db, err := database.NewConnection(cfg.Database.Host,
 		cfg.Database.Retry,
-		10*time.Second,
+		time.Duration(cfg.Database.RetryTimeout)*time.Second,
 		cfg.Database.User,
 		cfg.Database.Password,
-		cfg.Database.DB,
+		cfg.Database.Name,
 		cfg.Database.Port)
 	if err != nil {
 		return err
 	}
 
-	serverRouter := router.New()
-	linkStore := store.NewLinkStore(db)
-	h := handler.NewHandler(linkStore)
-	serverRouter.POST("/new", h.SaveURL)
-	serverRouter.GET("/:shortURL", h.Redirect)
-	serverRouter.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+	e := echo.New()
+	middlewareFunc := func() echo.MiddlewareFunc {
+		return func(next echo.HandlerFunc) echo.HandlerFunc {
+			return func(c echo.Context) error {
+				c.Set("linkStore", &repository.LinkStore{
+					DB: db,
+				})
+				return next(c)
+			}
+		}
+	}
+	e.Use(middlewareFunc())
+	e.POST("/new", handler.SaveURL)
+	e.GET("/:shortURL", handler.Redirect)
+	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
 		LogStatus: true,
 		LogValuesFunc: func(c echo.Context, values middleware.RequestLoggerValues) error {
@@ -77,7 +85,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 	defer cancel()
 	serverChannel := make(chan error)
 	go func() {
-		if err = serverRouter.Start(":" + strconv.Itoa(port)); err != nil {
+		if err = e.Start(":" + strconv.Itoa(port)); err != nil {
 			log.Errorf("Starting server failed: %s", err)
 			serverChannel <- err
 		}
@@ -90,12 +98,11 @@ func runServer(cmd *cobra.Command, args []string) error {
 	case <-shutdownCtx.Done():
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		if err = serverRouter.Shutdown(ctx); err != nil {
+		if err = e.Shutdown(ctx); err != nil {
 			log.Errorf("Shutting down has error: %s", err)
 
 			return err
 		}
-
 	case err = <-serverChannel:
 		close(serverChannel)
 

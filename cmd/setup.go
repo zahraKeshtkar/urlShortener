@@ -8,7 +8,7 @@ import (
 	"url-shortner/config"
 	"url-shortner/db"
 	"url-shortner/log"
-	"url-shortner/store"
+	repository "url-shortner/store"
 )
 
 func RegisterDatabase(root *cobra.Command, cfg config.Config) {
@@ -26,14 +26,16 @@ func migrate(cmd *cobra.Command, args []string) error {
 		10*time.Second,
 		cfg.Database.User,
 		cfg.Database.Password,
-		cfg.Database.DB,
+		cfg.Database.Name,
 		cfg.Database.Port)
 	if err != nil {
 		return err
 	}
 
-	linkStore := store.NewLinkStore(db)
-	err = linkStore.CreateLinkTable()
+	linkStore := repository.LinkStore{
+		DB: db,
+	}
+	err = linkStore.CreateTable()
 
 	return err
 }
