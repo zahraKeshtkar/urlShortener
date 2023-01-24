@@ -10,7 +10,7 @@ import (
 	repository "url-shortner/store"
 )
 
-func SaveURL(c echo.Context) error {
+func SaveURL(c echo.Context, linkStore *repository.LinkStore) error {
 	link := &model.Link{}
 	err := c.Bind(link)
 	if err != nil {
@@ -24,8 +24,7 @@ func SaveURL(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "This is not a url at all")
 	}
 
-	store := c.Get("linkStore").(*repository.LinkStore)
-	err = store.Insert(link)
+	err = linkStore.Insert(link)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "can not insert to the database")
 	}
@@ -38,7 +37,7 @@ func SaveURL(c echo.Context) error {
 	return c.JSON(http.StatusOK, link)
 }
 
-func Redirect(c echo.Context) error {
+func Redirect(c echo.Context, linkStore *repository.LinkStore) error {
 	shortURL := c.Param("shortURL")
 	link := model.Link{ShortURL: shortURL}
 	log.Debug("Get short url with this value ", shortURL)
@@ -53,8 +52,7 @@ func Redirect(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "the short url is not found")
 	}
 
-	store := c.Get("linkStore").(*repository.LinkStore)
-	link = store.Get(id)
+	link = linkStore.Get(id)
 	log.Debug("find the long url and redirect ", link.URL)
 
 	return c.Redirect(http.StatusFound, link.URL)

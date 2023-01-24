@@ -55,20 +55,16 @@ func runServer(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	e := echo.New()
-	middlewareFunc := func() echo.MiddlewareFunc {
-		return func(next echo.HandlerFunc) echo.HandlerFunc {
-			return func(c echo.Context) error {
-				c.Set("linkStore", &repository.LinkStore{
-					DB: db,
-				})
-				return next(c)
-			}
-		}
+	linkStore := &repository.LinkStore{
+		DB: db,
 	}
-	e.Use(middlewareFunc())
-	e.POST("/new", handler.SaveURL)
-	e.GET("/:shortURL", handler.Redirect)
+	e := echo.New()
+	e.POST("/new", func(c echo.Context) error {
+		return handler.SaveURL(c, linkStore)
+	})
+	e.GET("/:shortURL", func(c echo.Context) error {
+		return handler.Redirect(c, linkStore)
+	})
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
 		LogStatus: true,
