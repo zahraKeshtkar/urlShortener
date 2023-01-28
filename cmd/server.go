@@ -16,7 +16,7 @@ import (
 	database "url-shortner/db"
 	"url-shortner/handler"
 	"url-shortner/log"
-	repository "url-shortner/store"
+	"url-shortner/repository"
 )
 
 func RegisterServer(root *cobra.Command, cfg config.Config) {
@@ -55,16 +55,12 @@ func runServer(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	linkStore := &repository.LinkStore{
+	linkStore := &repository.Link{
 		DB: db,
 	}
 	e := echo.New()
-	e.POST("/new", func(c echo.Context) error {
-		return handler.SaveURL(c, linkStore)
-	})
-	e.GET("/:shortURL", func(c echo.Context) error {
-		return handler.Redirect(c, linkStore)
-	})
+	e.POST("/new", handler.Redirect(linkStore))
+	e.GET("/:shortURL", handler.SaveURL(linkStore))
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
 		LogStatus: true,

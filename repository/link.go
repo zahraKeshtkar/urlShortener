@@ -7,15 +7,15 @@ import (
 	"url-shortner/model"
 )
 
-type LinkStore struct {
+type Link struct {
 	DB *gorm.DB
 }
 
-func (linkStore *LinkStore) CreateTable() error {
+func (linkStore *Link) CreateTable() error {
 	if !linkStore.DB.Migrator().HasTable(model.Link{}) {
 		err := linkStore.DB.Migrator().CreateTable(&model.Link{})
 		if err != nil {
-			log.Errorf("creating LinkStore fail %s", err)
+			log.Errorf("creating Link fail %s", err)
 
 			return err
 		}
@@ -24,14 +24,14 @@ func (linkStore *LinkStore) CreateTable() error {
 	return nil
 }
 
-func (linkStore *LinkStore) Get(id int) model.Link {
+func (linkStore *Link) Get(id int) model.Link {
 	var link model.Link
 	linkStore.DB.Model(&link).First(&link, id)
 
 	return link
 }
 
-func (linkStore *LinkStore) Insert(link *model.Link) error {
+func (linkStore *Link) Insert(link *model.Link) error {
 	r := linkStore.DB.Table("links").Create(&link)
 	return r.Error
 }
