@@ -7,8 +7,6 @@ import (
 	"unicode/utf8"
 
 	"url-shortner/log"
-
-	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 const (
@@ -20,26 +18,26 @@ const (
 var urlRegex *regexp.Regexp
 
 func init() {
-	urlRegex = regexp.MustCompile(`[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
+	urlRegex = regexp.MustCompile(`((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[.\!\/\\w]*))?)`)
 }
 
 type Link struct {
-	ID       uint64 `json:"-" gorm:"primaryKey"`
-	URL      string `json:"url" gorm:"not null"`
+	ID       int    `json:"-" gorm:"column:id;primaryKey"`
+	URL      string `json:"url" gorm:"column:url"`
 	ShortURL string `gorm:"-:all"`
 }
 
-func (link *Link) Validate() bool {
-	err := validation.ValidateStruct(link,
-		validation.Field(&link.URL, validation.Match(urlRegex)),
-		validation.Field(&link.ShortURL, validation.Length(shortURLLength, shortURLLength)))
+func (link *Link) ShortURLValidate() bool {
+	return utf8.RuneCountInString(link.ShortURL) == 8
+}
 
-	return err == nil
+func (link *Link) URLValidate() bool {
+	return urlRegex.MatchString(link.URL)
 }
 
 func (link *Link) MakeShortURL() error {
 	log.Debugf("start to make shortURL for long url %s", link.URL)
-	id := int(link.ID)
+	id := link.ID
 	if id <= 0 {
 		return errors.New("id is not valid")
 	}
@@ -72,6 +70,10 @@ func (link *Link) expandURLLength(url string) string {
 }
 
 func (link *Link) ShortURLToID() (int, error) {
+	if !link.ShortURLValidate() {
+		return 0, errors.New("shortURL is not valid")
+	}
+
 	shortURL := strings.ReplaceAll(link.ShortURL, "Z", "")
 	var id = 0
 	for _, r := range shortURL {

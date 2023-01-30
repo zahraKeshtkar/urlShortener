@@ -44,6 +44,18 @@ func runServer(cmd *cobra.Command, args []string) error {
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
 	log.SetLevel(cfg.Log.Level)
+	redis, err := database.Connect(
+		cfg.Redis.Host,
+		cfg.Redis.Password,
+		cfg.Redis.DB,
+		cfg.Redis.Port,
+	)
+	if err != nil {
+		log.Errorf("Starting server failed: %s", err)
+
+		return err
+	}
+
 	db, err := database.NewConnection(cfg.Database.Host,
 		cfg.Database.Retry,
 		time.Duration(cfg.Database.RetryTimeout)*time.Second,
@@ -59,8 +71,8 @@ func runServer(cmd *cobra.Command, args []string) error {
 		DB: db,
 	}
 	e := echo.New()
-	e.POST("/new", handler.Redirect(linkStore))
-	e.GET("/:shortURL", handler.SaveURL(linkStore))
+	e.POST("/new", handler.Redirect(linkStore, redis))
+	e.GET("/:shortURL", handler.SaveURL(linkStore, redis))
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
 		LogStatus: true,

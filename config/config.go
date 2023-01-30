@@ -7,9 +7,10 @@ import (
 )
 
 type Config struct {
-	Database    SQLDatabase `yaml:"database"`
-	HttpHandler HttpHandler `yaml:"httpHandler"`
-	Log         Log         `yaml:"log"`
+	Database    SQLDatabase   `yaml:"database"`
+	HttpHandler HttpHandler   `yaml:"httpHandler"`
+	Log         Log           `yaml:"log"`
+	Redis       RedisDatabase `yaml:"redisDatabase"`
 }
 
 type SQLDatabase struct {
@@ -28,6 +29,13 @@ type HttpHandler struct {
 
 type Log struct {
 	Level string `yaml:"level"`
+}
+
+type RedisDatabase struct {
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	DB       int    `yaml:"db"`
+	Password string `yaml:"password"`
 }
 
 func Init() (Config, error) {
