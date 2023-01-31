@@ -1,60 +1,93 @@
 package model
 
 import (
-	"math/rand"
+	"errors"
 	"regexp"
-	"time"
+	"strings"
 	"unicode/utf8"
 
 	"url-shortner/log"
+
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
-type Link struct {
-	URL      string `json:"url"`
-	ShortURL string
-}
+const (
+	alphabets       = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXY"
+	alphabetsLength = 51
+	shortURLLength  = 8
+)
 
-const ShortURLLength = 8
-const Retry = 3
-
-var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-var re *regexp.Regexp
+var urlRegex *regexp.Regexp
 
 func init() {
-	re, _ = regexp.Compile(`[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
+	urlRegex = regexp.MustCompile(`[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
 }
 
-func (link *Link) IsURLValid() bool {
-	return re.MatchString(link.URL)
+type Link struct {
+	ID       uint64 `json:"-" gorm:"primaryKey"`
+	URL      string `json:"url" gorm:"not null"`
+	ShortURL string `gorm:"-:all"`
 }
 
-func (link *Link) MakeShortURL(db map[string]string) bool {
-	log.Trace("start to make shortURL")
-	shortURL := make([]rune, ShortURLLength)
-	rand.Seed(time.Now().UnixNano())
-	var counter = 0
-	for counter < Retry {
-		for i := range shortURL {
-			shortURL[i] = letters[rand.Intn(len(letters))]
-		}
-		_, ok := db[string(shortURL)]
-		if !ok {
-			link.ShortURL = string(shortURL)
-			return true
+func (link *Link) Validate() bool {
+	err := validation.ValidateStruct(link,
+		validation.Field(&link.URL, validation.Match(urlRegex)),
+		validation.Field(&link.ShortURL, validation.Length(shortURLLength, shortURLLength)))
 
-		}
+	return err == nil
+}
 
-		counter += 1
+func (link *Link) MakeShortURL() error {
+	log.Debugf("start to make shortURL for long url %s", link.URL)
+	id := int(link.ID)
+	if id <= 0 {
+		return errors.New("id is not valid")
 	}
 
-	return false
+	chars := []rune(alphabets)
+	var shortURL string
+	for id > 0 {
+		shortURL += string(chars[id%alphabetsLength])
+		log.Debug(chars[id%alphabetsLength], "append to the short url")
+		id = id / alphabetsLength
+	}
+
+	shortURL = link.expandURLLength(shortURL)
+	link.ShortURL = shortURL
+
+	return nil
 }
 
-func FindShortURL(shortURL string, db map[string]string) (string, bool) {
-	if utf8.RuneCountInString(shortURL) == ShortURLLength {
-		longURL, ok := db[shortURL]
-
-		return longURL, ok
+func (link *Link) expandURLLength(url string) string {
+	var shortURL = ""
+	var diff = shortURLLength - utf8.RuneCountInString(url)
+	for i := 0; i < diff; i++ {
+		shortURL += "Z"
 	}
-	return "", false
+
+	shortURL += url
+	log.Debug("append ", shortURL, "to the url", url)
+
+	return shortURL
+}
+
+func (link *Link) ShortURLToID() (int, error) {
+	shortURL := strings.ReplaceAll(link.ShortURL, "Z", "")
+	var id = 0
+	for _, r := range shortURL {
+		if int('a') <= int(r) && int(r) <= int('z') {
+			id = id*alphabetsLength + int(r) - int('a')
+		}
+
+		if int('A') <= int(r) && int(r) < int('Z') {
+			id = id*alphabetsLength + int(r) - int('A') + 26
+		}
+
+	}
+
+	if id > 0 {
+		return id, nil
+	}
+
+	return id, errors.New("id is not valid")
 }
