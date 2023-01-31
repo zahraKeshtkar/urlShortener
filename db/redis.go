@@ -23,7 +23,6 @@ func Connect(host string,
 		Password: password,
 		DB:       database,
 	})
-
 	_, err := client.Ping(ctx).Result()
 	if err != nil {
 		return nil, err

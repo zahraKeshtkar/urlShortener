@@ -43,7 +43,6 @@ type URLSuite struct {
 }
 
 func (suite *URLSuite) SetupSuite() {
-
 	log.InitLogger()
 	log.SetOutput(os.Stdout)
 	log.SetFormat(&logrus.TextFormatter{
@@ -56,15 +55,16 @@ func (suite *URLSuite) SetupSuite() {
 func (suite *URLSuite) Test_SaveURL_Fail() {
 	require := suite.Require()
 	testCases := map[interface{}]Response{
-		model.Link{URL: "twitter"}:  {code: http.StatusBadRequest, message: "This is not a url at all"},
-		model.Link{URL: "twitter"}:  {code: http.StatusBadRequest, message: "This is not a url at all"},
-		model.Link{URL: ""}:         {code: http.StatusBadRequest, message: "This is not a url at all"},
-		"https://echo.labstack.com": {code: http.StatusBadRequest, message: "can not decode the body as json"},
+		model.Link{URL: "twitter"}:    {code: http.StatusBadRequest, message: "This is not a url at all"},
+		model.Link{URL: "ww.twitter"}: {code: http.StatusBadRequest, message: "This is not a url at all"},
+		model.Link{URL: ""}:           {code: http.StatusBadRequest, message: "This is not a url at all"},
+		"https://echo.labstack.com":   {code: http.StatusBadRequest, message: "can not decode the body as json"},
 		model.Link{URL: "https://echo.lb.com"}: {code: http.StatusInternalServerError,
 			message: "can not insert to the database"},
 		model.Link{URL: "https://echolb.com"}: {code: http.StatusInternalServerError,
 			message: "some error in database occur"},
 	}
+
 	for link, response := range testCases {
 		if response.message == "some error in database occur" {
 			suite.mock.ExpectBegin()
@@ -73,6 +73,7 @@ func (suite *URLSuite) Test_SaveURL_Fail() {
 				WillReturnResult(sqlmock.NewResult(-2, 1))
 			suite.mock.ExpectCommit()
 		}
+
 		body, err := json.Marshal(link)
 		reader := bytes.NewReader(body)
 		request := httptest.NewRequest(http.MethodPost, "/new", reader)
@@ -140,6 +141,7 @@ func (suite *URLSuite) Test_Redirect_Success() {
 	require := suite.Require()
 	shortURL := "ZZZZZZZc"
 	rows := suite.mock.NewRows([]string{"id", "url"}).AddRow(2, "jnkjhkjh")
+
 	for i := 0; i < 2; i++ {
 		if i == 0 {
 			suite.redisMock.ExpectGet(shortURL).SetVal("https://github.com/")
@@ -164,6 +166,7 @@ func newEchoContext(request *http.Request) (echo.Context, *httptest.ResponseReco
 	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	response := httptest.NewRecorder()
 	e := echo.New()
+
 	return e.NewContext(request, response), response
 }
 

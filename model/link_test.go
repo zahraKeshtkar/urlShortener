@@ -50,7 +50,6 @@ func (suite *URLSuite) Test_ShortURLValidate_Fail() {
 	for _, link := range testCases {
 		require.Equal(false, link.ShortURLValidate())
 	}
-
 }
 
 func (suite *URLSuite) Test_ShortURLValidate_Success() {

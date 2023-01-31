@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -29,7 +28,6 @@ func SaveURL(linkStore *repository.Link, redis *redis.Client) func(c echo.Contex
 		}
 
 		err = linkStore.Insert(link)
-		fmt.Println(err)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "can not insert to the database")
 		}
