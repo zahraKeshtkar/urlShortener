@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
 	"url-shortner/log"
@@ -17,8 +17,8 @@ func NewConnection(host string,
 	password string,
 	database string,
 	port int) (*gorm.DB, error) {
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=disable database=%s", host, port, user, password, database)
-	db, err := gorm.Open(postgres.Open(dsn))
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", user, password, host, port, database)
+	db, err := gorm.Open(mysql.Open(dsn))
 	if err != nil {
 		log.Errorf("Cannot open database %s: %s", host, err)
 

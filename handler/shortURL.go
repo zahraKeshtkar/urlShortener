@@ -22,7 +22,7 @@ func SaveURL(linkStore *repository.Link, redis *redis.Client) func(c echo.Contex
 		}
 
 		log.Debug("Get long url with this value ", link.URL)
-		if !link.Validate() {
+		if !link.URLValidate() {
 			log.Debug("The long url is not valid ")
 
 			return echo.NewHTTPError(http.StatusBadRequest, "This is not a url at all")
@@ -54,7 +54,7 @@ func Redirect(linkStore *repository.Link, redis *redis.Client) func(c echo.Conte
 		shortURL := c.Param("shortURL")
 		link := model.Link{ShortURL: shortURL}
 		log.Debug("Get short url with this value ", shortURL)
-		if !link.Validate() {
+		if !link.ShortURLValidate() {
 			log.Debug("the short url is not found ", shortURL)
 
 			return echo.NewHTTPError(http.StatusBadRequest, "the short url is not valid")
