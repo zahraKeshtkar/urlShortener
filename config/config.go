@@ -6,11 +6,13 @@ import (
 	"url-shortner/log"
 )
 
+var defaultConfig *Config
+
 type Config struct {
 	Database    SQLDatabase   `yaml:"database"`
 	HttpHandler HttpHandler   `yaml:"httpHandler"`
 	Log         Log           `yaml:"log"`
-	Redis       RedisDatabase `yaml:"redisDatabase"`
+	Redis       RedisDatabase `yaml:"redis"`
 }
 
 type SQLDatabase struct {
@@ -32,10 +34,13 @@ type Log struct {
 }
 
 type RedisDatabase struct {
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	DB       int    `yaml:"db"`
-	Password string `yaml:"password"`
+	Host         string `yaml:"host"`
+	Port         int    `yaml:"port"`
+	DB           int    `yaml:"db"`
+	Password     string `yaml:"password"`
+	Retry        int    `yaml:"retry"`
+	RetryTimeout int    `yaml:"retryTimeout"`
+	TTL          int    `yaml:"TTL"`
 }
 
 func Init() (Config, error) {
@@ -44,16 +49,20 @@ func Init() (Config, error) {
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")
 	var err error
-	cfg := new(Config)
+	defaultConfig = new(Config)
 	if err = v.ReadInConfig(); err != nil {
 		log.Errorf("read the config file fail: %s", err)
 
-		return *cfg, err
+		return *defaultConfig, err
 	}
 
-	if err = v.Unmarshal(&cfg); err != nil {
+	if err = v.Unmarshal(&defaultConfig); err != nil {
 		log.Errorf("Unmarshal config failed: %s", err)
 	}
 
-	return *cfg, err
+	return *defaultConfig, err
+}
+
+func GetRedis() *RedisDatabase {
+	return &defaultConfig.Redis
 }

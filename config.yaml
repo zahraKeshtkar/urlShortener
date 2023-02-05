@@ -10,8 +10,11 @@ httpHandler:
   port: 8080
 log:
   level: "debug"
-redisDatabase:
+redis:
   host: "localhost"
   port: 3232
   password: "97243057"
   DB: 0
+  TTL: 1
+  retry: 4
+  retryTimeOut: 6

@@ -10,7 +10,7 @@ import (
 	"url-shortner/log"
 )
 
-func NewConnection(host string,
+func NewMySQLConnection(host string,
 	retry int,
 	retryTimeout time.Duration,
 	user string,
@@ -46,6 +46,7 @@ func NewConnection(host string,
 		log.Errorf("Cannot connect to database %s: %s", host, err)
 		if counter >= retry {
 			log.Errorf("Cannot connect to database %s after %d retries: %s", host, counter, err)
+			tickerChannel.Stop()
 
 			return db, err
 		}

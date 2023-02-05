@@ -16,9 +16,11 @@ const (
 )
 
 var urlRegex *regexp.Regexp
+var shortURLRegex *regexp.Regexp
 
 func init() {
 	urlRegex = regexp.MustCompile(`((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[.\!\/\\w]*))?)`)
+	shortURLRegex = regexp.MustCompile(`^[a-zA-Z]{7}[a-yA-Y]$`)
 }
 
 type Link struct {
@@ -27,12 +29,8 @@ type Link struct {
 	ShortURL string `gorm:"-:all"`
 }
 
-func (link *Link) ShortURLValidate() bool {
-	return utf8.RuneCountInString(link.ShortURL) == 8
-}
-
-func (link *Link) URLValidate() bool {
-	return urlRegex.MatchString(link.URL)
+func (link *Link) Validate() bool {
+	return urlRegex.MatchString(link.URL) || shortURLRegex.MatchString(link.ShortURL)
 }
 
 func (link *Link) MakeShortURL() error {
@@ -70,7 +68,7 @@ func (link *Link) expandURLLength(url string) string {
 }
 
 func (link *Link) ShortURLToID() (int, error) {
-	if !link.ShortURLValidate() {
+	if !link.Validate() {
 		return 0, errors.New("shortURL is not valid")
 	}
 

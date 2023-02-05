@@ -32,8 +32,6 @@ func RegisterServer(root *cobra.Command, cfg config.Config) {
 func runServer(cmd *cobra.Command, args []string) error {
 	port, err := cmd.Flags().GetInt("port")
 	if err != nil {
-		log.Errorf("Starting server failed: %s", err)
-
 		return err
 	}
 
@@ -44,19 +42,20 @@ func runServer(cmd *cobra.Command, args []string) error {
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
 	log.SetLevel(cfg.Log.Level)
-	redis, err := database.Connect(
+	redis, err := database.NewRedisConnection(
 		cfg.Redis.Host,
 		cfg.Redis.Password,
 		cfg.Redis.DB,
 		cfg.Redis.Port,
+		time.Duration(cfg.Redis.RetryTimeout)*time.Second,
+		cfg.Redis.Retry,
 	)
+	defer database.Disconnect(redis)
 	if err != nil {
-		log.Errorf("Starting server failed: %s", err)
-
 		return err
 	}
 
-	db, err := database.NewConnection(cfg.Database.Host,
+	db, err := database.NewMySQLConnection(cfg.Database.Host,
 		cfg.Database.Retry,
 		time.Duration(cfg.Database.RetryTimeout)*time.Second,
 		cfg.Database.User,
@@ -67,6 +66,7 @@ func runServer(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	defer database.Close(db)
 	linkStore := &repository.Link{
 		DB: db,
 	}

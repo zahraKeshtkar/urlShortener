@@ -24,11 +24,11 @@ func (linkStore *Link) CreateTable() error {
 	return nil
 }
 
-func (linkStore *Link) Get(id int) model.Link {
+func (linkStore *Link) Get(id int) (model.Link, error) {
 	var link model.Link
-	linkStore.DB.Model(&link).First(&link, id)
+	err := linkStore.DB.Where("id = ?", id).Find(&link).Error
 
-	return link
+	return link, err
 }
 
 func (linkStore *Link) Insert(link *model.Link) error {
