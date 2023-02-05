@@ -21,7 +21,7 @@ func RegisterDatabase(root *cobra.Command, cfg config.Config) {
 }
 
 func migrate(cmd *cobra.Command, args []string) error {
-	db, err := database.NewConnection(cfg.Database.Host,
+	db, err := database.NewMySQLConnection(cfg.Database.Host,
 		cfg.Database.Retry,
 		10*time.Second,
 		cfg.Database.User,

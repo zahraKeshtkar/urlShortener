@@ -1,16 +1,20 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
+	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/redis/go-redis/v9"
 
+	"url-shortner/config"
 	"url-shortner/log"
 	"url-shortner/model"
 	"url-shortner/repository"
 )
 
-func SaveURL(linkStore *repository.Link) func(c echo.Context) error {
+func SaveURL(linkStore *repository.Link, redis *redis.Client) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		link := &model.Link{}
 		err := c.Bind(link)
@@ -32,7 +36,15 @@ func SaveURL(linkStore *repository.Link) func(c echo.Context) error {
 
 		err = link.MakeShortURL()
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "some error in database occur")
+			return echo.NewHTTPError(http.StatusInternalServerError, "A database error has occurred")
+		}
+
+		err = redis.Set(c.Request().Context(), link.ShortURL, link.URL,
+			time.Duration(config.GetRedis().TTL)*time.Hour).Err()
+		if err != nil {
+			log.Errorf("Can not insert in redis the err is : %s", err)
+		} else {
+			log.Infof("The value was successfully inserted in redis: %s", link.ShortURL)
 		}
 
 		return c.JSON(http.StatusOK, link)
@@ -40,26 +52,40 @@ func SaveURL(linkStore *repository.Link) func(c echo.Context) error {
 
 }
 
-func Redirect(linkStore *repository.Link) func(c echo.Context) error {
+func Redirect(linkStore *repository.Link, redisClient *redis.Client) func(c echo.Context) error {
 	return func(c echo.Context) error {
-
 		shortURL := c.Param("shortURL")
 		link := model.Link{ShortURL: shortURL}
 		log.Debug("Get short url with this value ", shortURL)
 		if !link.Validate() {
-			log.Debug("the short url is not found ", shortURL)
+			log.Debug("The short url is not found ", shortURL)
 
 			return echo.NewHTTPError(http.StatusBadRequest, "the short url is not valid")
 		}
 
-		id, err := link.ShortURLToID()
-		if err != nil {
-			return echo.NewHTTPError(http.StatusNotFound, "the short url is not found")
+		url, err := redisClient.Get(c.Request().Context(), shortURL).Result()
+		if errors.Is(err, redis.Nil) == true {
+			log.Infof("The short url is not in redis : %s", err)
+		} else if err != nil {
+			log.Errorf("A redis error has occurred: %s", err)
+		} else {
+			return c.Redirect(http.StatusFound, url)
 		}
 
-		link = linkStore.Get(id)
-		log.Debug("find the long url and redirect ", link.URL)
+		id, err := link.ShortURLToID()
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "the short url is not found")
+		}
 
-		return c.Redirect(http.StatusFound, link.URL)
+		link, err = linkStore.Get(id)
+		if err != nil {
+			log.Errorf("A database error has occurred: %s", err)
+
+			return echo.NewHTTPError(http.StatusInternalServerError, "A database error has occurred")
+		}
+
+		log.Debugf("Find the long url and redirect %s", link.URL)
+
+		return c.Redirect(http.StatusFound, url)
 	}
 }

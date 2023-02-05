@@ -4,21 +4,21 @@ import (
 	"fmt"
 	"time"
 
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
 	"url-shortner/log"
 )
 
-func NewConnection(host string,
+func NewMySQLConnection(host string,
 	retry int,
 	retryTimeout time.Duration,
 	user string,
 	password string,
 	database string,
 	port int) (*gorm.DB, error) {
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=disable database=%s", host, port, user, password, database)
-	db, err := gorm.Open(postgres.Open(dsn))
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", user, password, host, port, database)
+	db, err := gorm.Open(mysql.Open(dsn))
 	if err != nil {
 		log.Errorf("Cannot open database %s: %s", host, err)
 
@@ -46,6 +46,7 @@ func NewConnection(host string,
 		log.Errorf("Cannot connect to database %s: %s", host, err)
 		if counter >= retry {
 			log.Errorf("Cannot connect to database %s after %d retries: %s", host, counter, err)
+			tickerChannel.Stop()
 
 			return db, err
 		}

@@ -32,8 +32,6 @@ func RegisterServer(root *cobra.Command, cfg config.Config) {
 func runServer(cmd *cobra.Command, args []string) error {
 	port, err := cmd.Flags().GetInt("port")
 	if err != nil {
-		log.Errorf("Starting server failed: %s", err)
-
 		return err
 	}
 
@@ -44,7 +42,20 @@ func runServer(cmd *cobra.Command, args []string) error {
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
 	log.SetLevel(cfg.Log.Level)
-	db, err := database.NewConnection(cfg.Database.Host,
+	redis, err := database.NewRedisConnection(
+		cfg.Redis.Host,
+		cfg.Redis.Password,
+		cfg.Redis.DB,
+		cfg.Redis.Port,
+		time.Duration(cfg.Redis.RetryTimeout)*time.Second,
+		cfg.Redis.Retry,
+	)
+	defer database.Disconnect(redis)
+	if err != nil {
+		return err
+	}
+
+	db, err := database.NewMySQLConnection(cfg.Database.Host,
 		cfg.Database.Retry,
 		time.Duration(cfg.Database.RetryTimeout)*time.Second,
 		cfg.Database.User,
@@ -55,12 +66,13 @@ func runServer(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	defer database.Close(db)
 	linkStore := &repository.Link{
 		DB: db,
 	}
 	e := echo.New()
-	e.POST("/new", handler.Redirect(linkStore))
-	e.GET("/:shortURL", handler.SaveURL(linkStore))
+	e.POST("/new", handler.Redirect(linkStore, redis))
+	e.GET("/:shortURL", handler.SaveURL(linkStore, redis))
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
 		LogStatus: true,
