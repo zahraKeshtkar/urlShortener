@@ -51,7 +51,7 @@ func Init() (Config, error) {
 	var err error
 	defaultConfig = new(Config)
 	if err = v.ReadInConfig(); err != nil {
-		log.Errorf("read the config file fail: %s", err)
+		log.Errorf("Read the config file fail: %s", err)
 
 		return *defaultConfig, err
 	}

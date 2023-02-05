@@ -34,7 +34,7 @@ func (link *Link) Validate() bool {
 }
 
 func (link *Link) MakeShortURL() error {
-	log.Debugf("start to make shortURL for long url %s", link.URL)
+	log.Debugf("Start to make shortURL for long url %s", link.URL)
 	id := link.ID
 	if id <= 0 {
 		return errors.New("id is not valid")
@@ -62,7 +62,7 @@ func (link *Link) expandURLLength(url string) string {
 	}
 
 	shortURL += url
-	log.Debug("append ", shortURL, "to the url", url)
+	log.Debug("Append ", shortURL, "to the url", url)
 
 	return shortURL
 }

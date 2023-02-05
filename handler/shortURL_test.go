@@ -2,6 +2,7 @@ package handler_test
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -36,13 +37,21 @@ type URLTestSuite struct {
 	linkStore *repository.Link
 	redisDB   *redis.Client
 	redisMock redismock.ClientMock
-	buffer    bytes.Buffer
+	logBuffer bytes.Buffer
+}
+
+func newEchoContext(request *http.Request) (echo.Context, *httptest.ResponseRecorder) {
+	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	response := httptest.NewRecorder()
+	e := echo.New()
+
+	return e.NewContext(request, response), response
 }
 
 func (suite *URLTestSuite) SetupSuite() {
 	log.InitLogger()
-	suite.buffer = bytes.Buffer{}
-	log.SetOutput(&suite.buffer)
+	suite.logBuffer = bytes.Buffer{}
+	log.SetOutput(&suite.logBuffer)
 	log.SetFormat(&logrus.TextFormatter{DisableTimestamp: true, DisableQuote: true})
 	log.SetLevel("debug")
 	_, err := config.Init()
@@ -52,7 +61,6 @@ func (suite *URLTestSuite) SetupSuite() {
 }
 
 func (suite *URLTestSuite) SetupTest() {
-	suite.buffer.Reset()
 	var (
 		db  *sql.DB
 		err error
@@ -63,11 +71,11 @@ func (suite *URLTestSuite) SetupTest() {
 	}
 
 	if db == nil {
-		log.Errorf("mock db is null")
+		log.Errorf("Mock db is null")
 	}
 
 	if suite.mock == nil {
-		log.Errorf("sqlmock is null")
+		log.Errorf("Sqlmock is null")
 	}
 
 	suite.db, err = gorm.Open(mysql.New(mysql.Config{
@@ -79,11 +87,11 @@ func (suite *URLTestSuite) SetupTest() {
 	}
 	suite.redisDB, suite.redisMock = redismock.NewClientMock()
 	if suite.redisDB == nil {
-		log.Errorf("mock redis is null")
+		log.Errorf("Mock redis is null")
 	}
 
 	if suite.redisMock == nil {
-		log.Errorf("redisMock  is null")
+		log.Errorf("RedisMock  is null")
 	}
 }
 
@@ -98,9 +106,15 @@ func (suite *URLTestSuite) TearDownTest() {
 		log.Errorf("Failed to close mock sql db, got error: %v", err)
 	}
 
-	err = suite.redisDB.Close()
+	ctx := context.Background()
+	suite.redisDB.FlushAll(ctx)
+	suite.logBuffer.Reset()
+}
+
+func (suite *URLTestSuite) TearDownSuite() {
+	err := suite.redisDB.Close()
 	if err != nil {
-		log.Errorf("Failed to close mock sql db, got error: %v", err)
+		log.Errorf("Failed to close redis, got error: %v", err)
 	}
 }
 
@@ -128,7 +142,7 @@ func (suite *URLTestSuite) Test_SaveURL_Success() {
 	require.NoError(err)
 	require.Equal(http.StatusOK, response.Code)
 	require.Equal(expectedShortURL, link.ShortURL)
-	require.Equal(suite.buffer.String(), expectedLogMessage)
+	require.Equal(suite.logBuffer.String(), expectedLogMessage)
 }
 
 func (suite *URLTestSuite) Test_Redirect_Success() {
@@ -229,7 +243,7 @@ func (suite *URLTestSuite) Test_SaveURL_Redis_Fail() {
 	context, _ := newEchoContext(request)
 	_ = handler.SaveURL(suite.linkStore, suite.redisDB)(context)
 
-	require.Equal(suite.buffer.String(), expectedLogMessage)
+	require.Equal(suite.logBuffer.String(), expectedLogMessage)
 }
 
 func (suite *URLTestSuite) Test_SaveURL_Mysql_Fail() {
@@ -292,17 +306,9 @@ func (suite *URLTestSuite) Test_Redirect_Redis_Fail() {
 		context.SetParamValues(shortURL)
 		_ = handler.Redirect(suite.linkStore, suite.redisDB)(context)
 
-		require.Equal(strings.Split(suite.buffer.String(), "\n")[0], expectedLogMessages[i])
-		suite.buffer.Reset()
+		require.Equal(strings.Split(suite.logBuffer.String(), "\n")[0], expectedLogMessages[i])
+		suite.logBuffer.Reset()
 	}
-}
-
-func newEchoContext(request *http.Request) (echo.Context, *httptest.ResponseRecorder) {
-	request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	response := httptest.NewRecorder()
-	e := echo.New()
-
-	return e.NewContext(request, response), response
 }
 
 func TestURLTestSuite(t *testing.T) {

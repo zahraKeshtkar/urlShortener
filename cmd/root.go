@@ -13,7 +13,7 @@ func Execute() error {
 	conf, err := config.Init()
 	cfg = conf
 	if err != nil {
-		log.Errorf("can not run the command err is  %s", err)
+		log.Errorf("Can not run the command err is  %s", err)
 
 		return err
 	}
@@ -24,7 +24,7 @@ func Execute() error {
 	RegisterServer(rootCmd, cfg)
 	RegisterDatabase(rootCmd, cfg)
 	if err = rootCmd.Execute(); err != nil {
-		log.Errorf("can not run the command err is  %s", err)
+		log.Errorf("Can not run the command err is  %s", err)
 
 		return err
 	}
