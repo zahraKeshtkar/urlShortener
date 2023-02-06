@@ -26,7 +26,8 @@ type SQLDatabase struct {
 }
 
 type HttpHandler struct {
-	Port int `yaml:"port"`
+	Port    int `yaml:"port"`
+	Workers int `yaml:"workers"`
 }
 
 type Log struct {

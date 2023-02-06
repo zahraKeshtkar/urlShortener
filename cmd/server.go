@@ -17,6 +17,7 @@ import (
 	"url-shortner/handler"
 	"url-shortner/log"
 	"url-shortner/repository"
+	workerpool "url-shortner/worker"
 )
 
 func RegisterServer(root *cobra.Command, cfg config.Config) {
@@ -70,9 +71,16 @@ func runServer(cmd *cobra.Command, args []string) error {
 	linkStore := &repository.Link{
 		DB: db,
 	}
+	worker, err := workerpool.NewWorkerpool(cfg.HttpHandler.Workers)
+	if err != nil {
+		return err
+	}
+
+	worker.Run()
+	defer worker.Close()
 	e := echo.New()
-	e.POST("/new", handler.Redirect(linkStore, redis))
-	e.GET("/:shortURL", handler.SaveURL(linkStore, redis))
+	e.POST("/new", handler.SaveURL(linkStore, redis, worker))
+	e.GET("/:shortURL", handler.Redirect(linkStore, redis))
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
 		LogStatus: true,
