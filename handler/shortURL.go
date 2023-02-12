@@ -12,9 +12,11 @@ import (
 	"url-shortner/log"
 	"url-shortner/model"
 	"url-shortner/repository"
+	"url-shortner/worker"
 )
 
-func SaveURL(linkStore *repository.Link, redis *redis.Client) func(c echo.Context) error {
+func SaveURL(linkStore *repository.Link, redis *redis.Client,
+	workerPool workerpool.WorkerPool) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		link := &model.Link{}
 		err := c.Bind(link)
@@ -29,11 +31,9 @@ func SaveURL(linkStore *repository.Link, redis *redis.Client) func(c echo.Contex
 			return echo.NewHTTPError(http.StatusBadRequest, "This is not a url at all")
 		}
 
-		err = linkStore.Insert(link)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "can not insert to the database")
-		}
-
+		workerPool.AddTask(func() error {
+			return linkStore.Insert(link)
+		})
 		err = link.MakeShortURL()
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "A database error has occurred")

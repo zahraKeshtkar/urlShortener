@@ -8,11 +8,12 @@ database:
   retryTimeOut: 6
 httpHandler:
   port: 8080
+  workers: 3
 log:
   level: "debug"
 redis:
   host: "localhost"
-  port: 3232
+  port: 6379
   password: "97243057"
   DB: 0
   TTL: 1
