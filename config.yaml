@@ -1,9 +1,9 @@
 database:
-  host: "localhost"
-  port: 5432
-  user: "url"
-  password: "97243057"
-  name: "gorm"
+  host: mysql
+  port: 3306
+  user: "root"
+  password: "mysql"
+  name: "shortener"
   retry: 4
   retryTimeOut: 6
 httpHandler:
@@ -12,9 +12,8 @@ httpHandler:
 log:
   level: "debug"
 redis:
-  host: "localhost"
+  host: redis
   port: 6379
-  password: "97243057"
   DB: 0
   TTL: 1
   retry: 4

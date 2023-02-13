@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: 'mysql:8'
+    container_name: shortenerDB
+    environment:
+      - MYSQL_DATABASE=shortener
+      - MYSQL_ROOT_PASSWORD=mysql
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysqldb:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost", "-uroot", "-pmysql" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  redis:
+    image: 'redis:7-alpine'
+    container_name: redis
+    ports:
+      - '6379:6379'
+    restart: always
+    command: >
+      --databases 1
+      --maxmemory-policy volatile-lru
+      --appendonly no
+    healthcheck:
+      test: [ "CMD", "redis-cli","ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+       mysql:
+          condition: service_healthy
+       redis:
+          condition: service_healthy
+
+volumes:
+  mysqldb:

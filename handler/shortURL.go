@@ -16,7 +16,7 @@ import (
 )
 
 func SaveURL(linkStore *repository.Link, redis *redis.Client,
-	workerPool workerpool.WorkerPool) func(c echo.Context) error {
+	workerPool workerpool.Workerpool) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		link := &model.Link{}
 		err := c.Bind(link)
