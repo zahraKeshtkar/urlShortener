@@ -16,7 +16,9 @@ import (
 	database "url-shortner/db"
 	"url-shortner/handler"
 	"url-shortner/log"
+	"url-shortner/metric"
 	"url-shortner/repository"
+	"url-shortner/tracing"
 	workerpool "url-shortner/worker"
 )
 
@@ -78,6 +80,15 @@ func runServer(cmd *cobra.Command, args []string) error {
 
 	worker.Run()
 	defer worker.Close()
+	err = tracing.NewJaegerTracer(context.Background())
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		metric.Monitor()
+	}()
+	metric.NewMuxMetric()
 	e := echo.New()
 	e.POST("/new", handler.SaveURL(linkStore, redis, worker))
 	e.GET("/:shortURL", handler.Redirect(linkStore, redis))

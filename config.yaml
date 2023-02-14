@@ -18,3 +18,7 @@ redis:
   TTL: 1
   retry: 4
   retryTimeOut: 6
+tracing:
+  url: "http://jaeger:14268/api/traces"
+metric:
+  port: 8081

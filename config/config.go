@@ -6,13 +6,15 @@ import (
 	"url-shortner/log"
 )
 
-var defaultConfig *Config
+var DefaultConfig *Config
 
 type Config struct {
 	Database    SQLDatabase   `yaml:"database"`
 	HttpHandler HttpHandler   `yaml:"httpHandler"`
 	Log         Log           `yaml:"log"`
 	Redis       RedisDatabase `yaml:"redis"`
+	Tracing     Tracing       `yaml:"tracing"`
+	Metric      Metric        `yaml:"metric"`
 }
 
 type SQLDatabase struct {
@@ -44,26 +46,34 @@ type RedisDatabase struct {
 	TTL          int    `yaml:"TTL"`
 }
 
+type Tracing struct {
+	URL string `yaml:"url"`
+}
+
+type Metric struct {
+	Port int `yaml:"port"`
+}
+
 func Init() (Config, error) {
 	v := viper.New()
 	v.AddConfigPath(".")
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")
 	var err error
-	defaultConfig = new(Config)
+	DefaultConfig = new(Config)
 	if err = v.ReadInConfig(); err != nil {
 		log.Errorf("Read the config file fail: %s", err)
 
-		return *defaultConfig, err
+		return *DefaultConfig, err
 	}
 
-	if err = v.Unmarshal(&defaultConfig); err != nil {
+	if err = v.Unmarshal(&DefaultConfig); err != nil {
 		log.Errorf("Unmarshal config failed: %s", err)
 	}
 
-	return *defaultConfig, err
+	return *DefaultConfig, err
 }
 
 func GetRedis() *RedisDatabase {
-	return &defaultConfig.Redis
+	return &DefaultConfig.Redis
 }
